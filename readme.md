@@ -1,6 +1,7 @@
-robots
+## Mobile Robot Systems Mini Project
 
 
+### Setup Instructions
 clone into `catkin_ws/src`
 
 ```
