@@ -2,8 +2,7 @@
 <package format="2">
   <name>multi_robot</name>
   <version>1.0.0</version>
-  <description>Exercises for Mobile Robots</description>
-  <maintainer email="ar899@cl.cam.ac.uk">ar899</maintainer>
+  <description>Mobile Robots Mini Project</description>
   <license>None</license>
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>rospy</build_depend>
