@@ -2,7 +2,9 @@
 <package format="2">
   <name>multi_robot</name>
   <version>1.0.0</version>
-  <description>Mobile Robots Mini Project</description>
+  <description>Mobile Robot Systems Mini Project</description>
+  <maintainer email="drsp2@cl.cam.ac.uk">drsp2</maintainer>
+  <maintainer email="aeb83@cl.cam.ac.uk">aeb83</maintainer>
   <license>None</license>
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>rospy</build_depend>

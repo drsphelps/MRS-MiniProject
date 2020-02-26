@@ -19,16 +19,6 @@ from gazebo_msgs.msg import ModelStates
 from tf.transformations import euler_from_quaternion
 
 
-def get_velocities(front, front_left, front_right, left, right):
-  sensors = np.array([1/left, 1/front_left, 1/front, 1/front_right, 1/right])
-  angular_weights = np.array([-0.5, -1.0, 2.0, 1.0, 0.5])
-  angular_scale_factor = 1.0/6.0
-  w = np.dot(sensors, angular_weights) * angular_scale_factor
-  vel_weights = np.array([0.0, 0.1, 0.5, 0.1, 0.0])
-  vel_scale_factor = 1.0
-  u = 1.0 - np.dot(sensors, vel_weights) * vel_scale_factor
-  return u, w # ([m/s], [rad/s])
-
 class SimpleLaser(object):
     def __init__(self, name=""):
         rospy.Subscriber('/'+name+'/scan', LaserScan, self.callback)
@@ -109,6 +99,7 @@ class Robot(object):
         self.publisher = rospy.Publisher('/' + name + '/cmd_vel', Twist, queue_size=5)
         self.laser = SimpleLaser(name=name)
         self.name = name
+        self.vel_msg = Twist()
         with open('/tmp/gazebo_exercise_'+self.name+'.txt', 'w'):
             pass
     
@@ -116,11 +107,8 @@ class Robot(object):
         if not self.laser.ready or not self.groundtruth.ready:
             rate_limiter.sleep()
             return
-        u, w = get_velocities(*self.laser.measurements)
-        vel_msg = Twist()
-        vel_msg.linear.x = u
-        vel_msg.angular.z = w
-        self.publisher.publish(vel_msg)
+        self.get_velocities(*self.laser.measurements)
+        self.publisher.publish(self.vel_msg)
         self.pose_history.append(self.groundtruth.pose)
 
         if len(self.pose_history) % 10:
@@ -128,6 +116,18 @@ class Robot(object):
                 fp.write('\n'.join(','.join(str(v) for v in p)
                                    for p in self.pose_history) + '\n')
                 self.pose_history = []
+
+
+    def get_velocities(self, front, front_left, front_right, left, right):
+        sensors = np.array([1/left, 1/front_left, 1/front, 1/front_right, 1/right])
+        angular_weights = np.array([-0.5, -1.0, 2.0, 1.0, 0.5])
+        angular_scale_factor = 1.0/6.0
+        w = np.dot(sensors, angular_weights) * angular_scale_factor
+        vel_weights = np.array([0.0, 0.1, 0.5, 0.1, 0.0])
+        vel_scale_factor = 1.0
+        u = 1.0 - np.dot(sensors, vel_weights) * vel_scale_factor
+        self.vel_msg.linear.x = u
+        self.vel_msg.angular.z = w
 
 
 def run(args):
