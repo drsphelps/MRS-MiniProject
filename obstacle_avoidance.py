@@ -119,15 +119,28 @@ class Robot(object):
 
 
     def get_velocities(self, front, front_left, front_right, left, right):
-        sensors = np.array([1/left, 1/front_left, 1/front, 1/front_right, 1/right])
-        angular_weights = np.array([-0.5, -1.0, 2.0, 1.0, 0.5])
-        angular_scale_factor = 1.0/6.0
-        w = np.dot(sensors, angular_weights) * angular_scale_factor
-        vel_weights = np.array([0.0, 0.1, 0.5, 0.1, 0.0])
-        vel_scale_factor = 1.0
-        u = 1.0 - np.dot(sensors, vel_weights) * vel_scale_factor
-        self.vel_msg.linear.x = u
+        u = 1.
+        w = 0.
+        sensors = np.array([1./left, 1./front_left, 1./front, 1./front_right, 1./right])  
+        vl_weights = np.array([0.5, 1., -2.5, -1., -0.5])
+        vr_weights = np.array([-0.5, -1., 1.5, 1, 0.5])
+        vr = np.dot(vr_weights, sensors)
+        vl = np.dot(vl_weights, sensors)
+        u = ((vr + vl) / 2) + 1
+        w = (vr - vl) / 2
+
+        self.vel_msg.linear.x = u / 2
         self.vel_msg.angular.z = w
+
+
+class Leader(Robot):
+    def __init__(self, name):
+        super(Leader, self).__init__(name)
+
+
+class Follower(Robot):
+    def __init__(self, name):
+        super(Follower, self).__init__(name)
 
 
 def run(args):
@@ -137,11 +150,11 @@ def run(args):
     # Update control every 100 ms.
     rate_limiter = rospy.Rate(100)
     # Leader robot
-    l = Robot("t0")
+    l = Leader("t0")
     # Follower robot 1
-    f1 = Robot("t1")
+    f1 = Follower("t1")
     # Follower robot 2
-    f2 = Robot("t2")
+    f2 = Follower("t2")
 
 
     while not rospy.is_shutdown():
