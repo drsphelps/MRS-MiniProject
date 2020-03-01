@@ -10,17 +10,17 @@
   <arg name="third_tb3"  default="t2"/>
 
   <arg name="first_tb3_x_pos" default="-1.0"/>
-  <arg name="first_tb3_y_pos" default="-1.0"/>
+  <arg name="first_tb3_y_pos" default="-0.9"/>
   <arg name="first_tb3_z_pos" default=" 0.0"/>
-  <arg name="first_tb3_yaw"   default=" 1.57"/>
+  <arg name="first_tb3_yaw"   default=" 0.0"/>
 
-  <arg name="second_tb3_x_pos" default=" 1.0"/>
-  <arg name="second_tb3_y_pos" default="-1.0"/>
+  <arg name="second_tb3_x_pos" default="-1.3"/>
+  <arg name="second_tb3_y_pos" default="-0.6"/>
   <arg name="second_tb3_z_pos" default=" 0.0"/>
-  <arg name="second_tb3_yaw"   default=" 1.57"/>
+  <arg name="second_tb3_yaw"   default=" 0.0"/>
 
-  <arg name="third_tb3_x_pos" default=" 0.5"/>
-  <arg name="third_tb3_y_pos" default=" 1.0"/>
+  <arg name="third_tb3_x_pos" default="-1.3"/>
+  <arg name="third_tb3_y_pos" default="-1.2"/>
   <arg name="third_tb3_z_pos" default=" 0.0"/>
   <arg name="third_tb3_yaw"   default=" 0.0"/>
 

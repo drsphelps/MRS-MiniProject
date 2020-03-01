@@ -18,6 +18,16 @@ from sensor_msgs.msg import LaserScan
 from gazebo_msgs.msg import ModelStates
 from tf.transformations import euler_from_quaternion
 
+X = 0
+Y = 1
+YAW = 2
+
+
+def rotate(v, a):
+  rotation = np.array([[np.cos(a), -np.sin(a)],
+                      [np.sin(a), np.cos(a)]])
+  return np.dot(rotation, v)
+
 
 class SimpleLaser(object):
     def __init__(self, name=""):
@@ -108,15 +118,21 @@ class Robot(object):
         u = 1.
         w = 0.
         sensors = np.array([1./left, 1./front_left, 1./front, 1./front_right, 1./right])  
-        vl_weights = np.array([0.5, 1., -2.5, -1., -0.5])
-        vr_weights = np.array([-0.5, -1., 1.5, 1, 0.5])
+        vl_weights = np.array([.5, 1.1, -1.5, -.9, -.5])
+        vr_weights = np.array([-.5, -.9, 2.5, 1.1, .5])
         vr = np.dot(vr_weights, sensors)
         vl = np.dot(vl_weights, sensors)
-        u = ((vr + vl) / 2) + 1
-        w = (vr - vl) / 2
+        u = 1 - ((vr + vl) / 2)
+        w = (vr - vl)
 
-        self.vel_msg.linear.x = u / 2
-        self.vel_msg.angular.z = w
+        self.vel_msg.linear.x = u / 2.
+        self.vel_msg.angular.z = w / 6.
+
+    def write_pose(self):        
+        with open('/tmp/gazebo_exercise_'+self.name+'.txt', 'a') as fp:
+            fp.write('\n'.join(','.join(str(v) for v in p)
+                                for p in self.pose_history) + '\n')
+            self.pose_history = []
 
 
 class Leader(Robot):
@@ -130,31 +146,42 @@ class Leader(Robot):
         self.braitenberg(*self.laser.measurements)
         self.publisher.publish(self.vel_msg)
         self.pose_history.append(self.groundtruth.pose)
+        if not len(self.pose_history) % 10:
+            self.write_pose()
 
-        if len(self.pose_history) % 10:
-            with open('/tmp/gazebo_exercise_'+self.name+'.txt', 'a') as fp:
-                fp.write('\n'.join(','.join(str(v) for v in p)
-                                   for p in self.pose_history) + '\n')
-                self.pose_history = []
-
-
+    
 class Follower(Robot):
-    def __init__(self, name):
+    def __init__(self, name, rel_pos):
         super(Follower, self).__init__(name)
+        self.relative_position = rel_pos
+        self.epsilon = 0.2
 
-    def update_velocities(self, rate_limiter):
+    def update_velocities(self, rate_limiter, leader_pose):
         if not self.laser.ready or not self.groundtruth.ready:
             rate_limiter.sleep()
             return
-        self.braitenberg(*self.laser.measurements)
+        self.follow(leader_pose)
         self.publisher.publish(self.vel_msg)
         self.pose_history.append(self.groundtruth.pose)
+        if not len(self.pose_history) % 10:
+            self.write_pose()
 
-        if len(self.pose_history) % 10:
-            with open('/tmp/gazebo_exercise_'+self.name+'.txt', 'a') as fp:
-                fp.write('\n'.join(','.join(str(v) for v in p)
-                                   for p in self.pose_history) + '\n')
-                self.pose_history = []
+    def follow(self, leader_pose):
+        desired_position = leader_pose[:-1] + rotate(self.relative_position[:-1], leader_pose[YAW])
+        tow = self.groundtruth.pose[:-1] + rotate(np.array([.2,0]), self.groundtruth.pose[YAW])
+
+        vector_to_travel = desired_position - tow
+
+        self.linearised_feedback(vector_to_travel)
+
+    def linearised_feedback(self, velocity):
+        pose = self.groundtruth.pose
+
+        u = velocity[X] * np.cos(pose[YAW]) + velocity[Y] * np.sin(pose[YAW])
+        w = (-velocity[X] * np.sin(pose[YAW]) + velocity[Y] * np.cos(pose[YAW])) / self.epsilon
+
+        self.vel_msg.linear.x = u * 1.2
+        self.vel_msg.angular.z = w
 
 
 def run(args):
@@ -166,16 +193,16 @@ def run(args):
     # Leader robot
     l = Leader("t0")
     # Follower robot 1
-    f1 = Follower("t1")
+    f1 = Follower("t1", np.array([.2, .2, 0.]))
     # Follower robot 2
-    f2 = Follower("t2")
+    f2 = Follower("t2", np.array([-.2, -.2, 0.]))
 
 
     while not rospy.is_shutdown():
         # Make sure all measurements are ready.
-        l.update_velocities(rate_limiter=rate_limiter)
-        f1.update_velocities(rate_limiter=rate_limiter)
-        f2.update_velocities(rate_limiter=rate_limiter)
+        l.update_velocities(rate_limiter)
+        f1.update_velocities(rate_limiter, l.groundtruth.pose)
+        f2.update_velocities(rate_limiter, l.groundtruth.pose)
 
         rate_limiter.sleep()
 
