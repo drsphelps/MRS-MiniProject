@@ -102,23 +102,9 @@ class Robot(object):
         self.vel_msg = Twist()
         with open('/tmp/gazebo_exercise_'+self.name+'.txt', 'w'):
             pass
-    
-    def update_velocities(self, rate_limiter):
-        if not self.laser.ready or not self.groundtruth.ready:
-            rate_limiter.sleep()
-            return
-        self.get_velocities(*self.laser.measurements)
-        self.publisher.publish(self.vel_msg)
-        self.pose_history.append(self.groundtruth.pose)
-
-        if len(self.pose_history) % 10:
-            with open('/tmp/gazebo_exercise_'+self.name+'.txt', 'a') as fp:
-                fp.write('\n'.join(','.join(str(v) for v in p)
-                                   for p in self.pose_history) + '\n')
-                self.pose_history = []
 
 
-    def get_velocities(self, front, front_left, front_right, left, right):
+    def braitenberg(self, front, front_left, front_right, left, right):
         u = 1.
         w = 0.
         sensors = np.array([1./left, 1./front_left, 1./front, 1./front_right, 1./right])  
@@ -136,11 +122,39 @@ class Robot(object):
 class Leader(Robot):
     def __init__(self, name):
         super(Leader, self).__init__(name)
+    
+    def update_velocities(self, rate_limiter):
+        if not self.laser.ready or not self.groundtruth.ready:
+            rate_limiter.sleep()
+            return
+        self.braitenberg(*self.laser.measurements)
+        self.publisher.publish(self.vel_msg)
+        self.pose_history.append(self.groundtruth.pose)
+
+        if len(self.pose_history) % 10:
+            with open('/tmp/gazebo_exercise_'+self.name+'.txt', 'a') as fp:
+                fp.write('\n'.join(','.join(str(v) for v in p)
+                                   for p in self.pose_history) + '\n')
+                self.pose_history = []
 
 
 class Follower(Robot):
     def __init__(self, name):
         super(Follower, self).__init__(name)
+
+    def update_velocities(self, rate_limiter):
+        if not self.laser.ready or not self.groundtruth.ready:
+            rate_limiter.sleep()
+            return
+        self.braitenberg(*self.laser.measurements)
+        self.publisher.publish(self.vel_msg)
+        self.pose_history.append(self.groundtruth.pose)
+
+        if len(self.pose_history) % 10:
+            with open('/tmp/gazebo_exercise_'+self.name+'.txt', 'a') as fp:
+                fp.write('\n'.join(','.join(str(v) for v in p)
+                                   for p in self.pose_history) + '\n')
+                self.pose_history = []
 
 
 def run(args):
