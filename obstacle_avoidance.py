@@ -125,7 +125,7 @@ class Robot(object):
         u = 1 - ((vr + vl) / 2)
         w = (vr - vl)
 
-        self.vel_msg.linear.x = u / 2.
+        self.vel_msg.linear.x = u / 4.
         self.vel_msg.angular.z = w / 6.
 
     def write_pose(self):        
@@ -160,7 +160,10 @@ class Follower(Robot):
         if not self.laser.ready or not self.groundtruth.ready:
             rate_limiter.sleep()
             return
-        self.follow(leader_pose)
+        if not self.obstacle(*self.laser.measurements):
+            self.follow(leader_pose)
+        else:
+            self.braitenberg(*self.laser.measurements)
         self.publisher.publish(self.vel_msg)
         self.pose_history.append(self.groundtruth.pose)
         if not len(self.pose_history) % 10:
@@ -168,13 +171,14 @@ class Follower(Robot):
 
     def follow(self, leader_pose):
         desired_position = leader_pose[:-1] + rotate(self.relative_position[:-1], leader_pose[YAW])
-        tow = self.groundtruth.pose[:-1] + rotate(np.array([.2,0]), self.groundtruth.pose[YAW])
+        tow = self.groundtruth.pose[:-1] + rotate(np.array([0.1,0.]), self.groundtruth.pose[YAW])
 
         vector_to_travel = desired_position - tow
 
         self.linearised_feedback(vector_to_travel)
 
     def linearised_feedback(self, velocity):
+        velocity = cap(velocity, 0.5)
         pose = self.groundtruth.pose
 
         u = velocity[X] * np.cos(pose[YAW]) + velocity[Y] * np.sin(pose[YAW])
@@ -182,6 +186,16 @@ class Follower(Robot):
 
         self.vel_msg.linear.x = u * 1.2
         self.vel_msg.angular.z = w
+
+    def obstacle(self, front, front_left, front_right, left, right):
+        return min([front, front_left, front_right]) < 0.5
+            
+
+def cap(v, max_speed):
+  n = np.linalg.norm(v)
+  if n > max_speed:
+    return v / n * max_speed
+  return v
 
 
 def run(args):
@@ -193,7 +207,7 @@ def run(args):
     # Leader robot
     l = Leader("t0")
     # Follower robot 1
-    f1 = Follower("t1", np.array([.2, .2, 0.]))
+    f1 = Follower("t1", np.array([-.2, .2, 0.]))
     # Follower robot 2
     f2 = Follower("t2", np.array([-.2, -.2, 0.]))
 
@@ -203,7 +217,6 @@ def run(args):
         l.update_velocities(rate_limiter)
         f1.update_velocities(rate_limiter, l.groundtruth.pose)
         f2.update_velocities(rate_limiter, l.groundtruth.pose)
-
         rate_limiter.sleep()
 
 
