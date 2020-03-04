@@ -158,24 +158,17 @@ class Follower(Robot):
 
 
 def run(args):
-    rospy.init_node('obstacle_avoidance')
-    # avoidance_method = globals()[args.mode]
+    rospy.init_node('main')
     
     # Update control every 100 ms.
     rate_limiter = rospy.Rate(100)
     # Leader robot
     l = Leader("t0")
-    # Follower robot 1
-    f1 = Follower("t1")
-    # Follower robot 2
-    f2 = Follower("t2")
 
 
     while not rospy.is_shutdown():
         # Make sure all measurements are ready.
         l.update_velocities(rate_limiter=rate_limiter)
-        f1.update_velocities(rate_limiter=rate_limiter)
-        f2.update_velocities(rate_limiter=rate_limiter)
 
         rate_limiter.sleep()
 
