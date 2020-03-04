@@ -97,6 +97,7 @@
     <param name="lasamplerange" value="0.005"/>
     <param name="lasamplestep" value="0.005"/>
   </node>
+  
   <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen" ns="t2">
     <param name="base_frame" value="t2/base_footprint"/>
     <param name="odom_frame" value="t2/odom"/>
@@ -168,9 +169,7 @@
   <node pkg="tf" type="static_transform_publisher" name="world_to_$(arg third_tb3)_tf_broadcaster" args="0 0 0 0 0 0 /map /$(arg third_tb3)/map 100"/>
 
   <!-- rviz -->
-  <group if="$(arg open_rviz)"> 
-    <!-- <node pkg="rviz" type="rviz" name="rviz" required="true"
-          args="-d $(find turtlebot3_gazebo)/rviz/multi_turtlebot3_slam.rviz"/> -->
+  <group if="$(arg open_rviz)">
     <node pkg="rviz" type="rviz" name="rviz" required="true"
           args="-d $(find multi_robot)/rviz/slam.rviz"/>
   </group>
