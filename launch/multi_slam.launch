@@ -1,0 +1,176 @@
+<launch>
+  <arg name="ns" default="t0"/>
+
+  <!-- Arguments -->
+  <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
+  <arg name="first_tb3"  default="t0"/>
+  <arg name="second_tb3" default="t1"/>
+  <arg name="third_tb3"  default="t2"/>
+
+  <arg name="first_tb3_x_pos" default="-1.0"/>
+  <arg name="first_tb3_y_pos" default="-0.9"/>
+  <arg name="first_tb3_z_pos" default=" 0.0"/>
+  <arg name="first_tb3_yaw"   default=" 0.0"/>
+
+  <arg name="second_tb3_x_pos" default="-1.3"/>
+  <arg name="second_tb3_y_pos" default="-0.6"/>
+  <arg name="second_tb3_z_pos" default=" 0.0"/>
+  <arg name="second_tb3_yaw"   default=" 0.0"/>
+
+  <arg name="third_tb3_x_pos" default="-1.3"/>
+  <arg name="third_tb3_y_pos" default="-1.2"/>
+  <arg name="third_tb3_z_pos" default=" 0.0"/>
+  <arg name="third_tb3_yaw"   default=" 0.0"/>
+  <arg name="slam_methods" default="gmapping" doc="slam type [gmapping]"/>
+  <arg name="open_rviz" default="true"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="map_broadcaster" args="-10 -10 0 0 0 0 map occupancy_grid 100" />
+
+  <!-- Gmapping -->
+  <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen" ns="t0">
+    <param name="base_frame" value="t0/base_footprint"/>
+    <param name="odom_frame" value="t0/odom"/>
+    <param name="map_frame"  value="t0/map"/>
+    <param name="map_update_interval" value="2.0"/>
+    <param name="maxUrange" value="4.0"/>
+    <param name="minimumScore" value="100"/>
+    <param name="linearUpdate" value="0.2"/>
+    <param name="angularUpdate" value="0.2"/>
+    <param name="temporalUpdate" value="0.5"/>
+    <param name="delta" value="0.05"/>
+    <param name="lskip" value="0"/>
+    <param name="particles" value="120"/>
+    <param name="sigma" value="0.05"/>
+    <param name="kernelSize" value="1"/>
+    <param name="lstep" value="0.05"/>
+    <param name="astep" value="0.05"/>
+    <param name="iterations" value="5"/>
+    <param name="lsigma" value="0.075"/>
+    <param name="ogain" value="3.0"/>
+    <param name="srr" value="0.01"/>
+    <param name="srt" value="0.02"/>
+    <param name="str" value="0.01"/>
+    <param name="stt" value="0.02"/>
+    <param name="resampleThreshold" value="0.5"/>
+    <param name="xmin" value="-10.0"/>
+    <param name="ymin" value="-10.0"/>
+    <param name="xmax" value="10.0"/>
+    <param name="ymax" value="10.0"/>
+    <param name="llsamplerange" value="0.01"/>
+    <param name="llsamplestep" value="0.01"/>
+    <param name="lasamplerange" value="0.005"/>
+    <param name="lasamplestep" value="0.005"/>
+  </node>
+
+  <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen" ns="t1">
+    <param name="base_frame" value="t1/base_footprint"/>
+    <param name="odom_frame" value="t1/odom"/>
+    <param name="map_frame"  value="t1/map"/>
+    <param name="map_update_interval" value="2.0"/>
+    <param name="maxUrange" value="4.0"/>
+    <param name="minimumScore" value="100"/>
+    <param name="linearUpdate" value="0.2"/>
+    <param name="angularUpdate" value="0.2"/>
+    <param name="temporalUpdate" value="0.5"/>
+    <param name="delta" value="0.05"/>
+    <param name="lskip" value="0"/>
+    <param name="particles" value="120"/>
+    <param name="sigma" value="0.05"/>
+    <param name="kernelSize" value="1"/>
+    <param name="lstep" value="0.05"/>
+    <param name="astep" value="0.05"/>
+    <param name="iterations" value="5"/>
+    <param name="lsigma" value="0.075"/>
+    <param name="ogain" value="3.0"/>
+    <param name="srr" value="0.01"/>
+    <param name="srt" value="0.02"/>
+    <param name="str" value="0.01"/>
+    <param name="stt" value="0.02"/>
+    <param name="resampleThreshold" value="0.5"/>
+    <param name="xmin" value="-10.0"/>
+    <param name="ymin" value="-10.0"/>
+    <param name="xmax" value="10.0"/>
+    <param name="ymax" value="10.0"/>
+    <param name="llsamplerange" value="0.01"/>
+    <param name="llsamplestep" value="0.01"/>
+    <param name="lasamplerange" value="0.005"/>
+    <param name="lasamplestep" value="0.005"/>
+  </node>
+  <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen" ns="t2">
+    <param name="base_frame" value="t2/base_footprint"/>
+    <param name="odom_frame" value="t2/odom"/>
+    <param name="map_frame"  value="t2/map"/>
+    <param name="map_update_interval" value="2.0"/>
+    <param name="maxUrange" value="4.0"/>
+    <param name="minimumScore" value="100"/>
+    <param name="linearUpdate" value="0.2"/>
+    <param name="angularUpdate" value="0.2"/>
+    <param name="temporalUpdate" value="0.5"/>
+    <param name="delta" value="0.05"/>
+    <param name="lskip" value="0"/>
+    <param name="particles" value="120"/>
+    <param name="sigma" value="0.05"/>
+    <param name="kernelSize" value="1"/>
+    <param name="lstep" value="0.05"/>
+    <param name="astep" value="0.05"/>
+    <param name="iterations" value="5"/>
+    <param name="lsigma" value="0.075"/>
+    <param name="ogain" value="3.0"/>
+    <param name="srr" value="0.01"/>
+    <param name="srt" value="0.02"/>
+    <param name="str" value="0.01"/>
+    <param name="stt" value="0.02"/>
+    <param name="resampleThreshold" value="0.5"/>
+    <param name="xmin" value="-10.0"/>
+    <param name="ymin" value="-10.0"/>
+    <param name="xmax" value="10.0"/>
+    <param name="ymax" value="10.0"/>
+    <param name="llsamplerange" value="0.01"/>
+    <param name="llsamplestep" value="0.01"/>
+    <param name="lasamplerange" value="0.005"/>
+    <param name="lasamplestep" value="0.005"/>
+  </node>
+  <group ns="$(arg first_tb3)/map_merge">
+    <param name="init_pose_x"   value="$(arg first_tb3_x_pos)"/>
+    <param name="init_pose_y"   value="$(arg first_tb3_y_pos)"/>
+    <param name="init_pose_z"   value="$(arg first_tb3_z_pos)"/>
+    <param name="init_pose_yaw" value="$(arg first_tb3_yaw)"  />
+  </group>
+
+  <group ns="$(arg second_tb3)/map_merge">
+    <param name="init_pose_x"   value="$(arg second_tb3_x_pos)"/>
+    <param name="init_pose_y"   value="$(arg second_tb3_y_pos)"/>
+    <param name="init_pose_z"   value="$(arg second_tb3_z_pos)"/>
+    <param name="init_pose_yaw" value="$(arg second_tb3_yaw)"  />
+  </group>
+
+  <group ns="$(arg third_tb3)/map_merge">
+    <param name="init_pose_x"   value="$(arg third_tb3_x_pos)"/>
+    <param name="init_pose_y"   value="$(arg third_tb3_y_pos)"/>
+    <param name="init_pose_z"   value="$(arg third_tb3_z_pos)"/>
+    <param name="init_pose_yaw" value="$(arg third_tb3_yaw)"  />
+  </group>
+  <node pkg="multirobot_map_merge" type="map_merge" respawn="false" name="map_merge" output="screen">
+    <param name="robot_map_topic" value="map"/>
+    <param name="robot_namespace" value="tb3"/>
+    <param name="merged_map_topic" value="map"/>
+    <param name="world_frame" value="map"/>
+    <param name="known_init_poses" value="true"/>
+    <param name="merging_rate" value="0.5"/>
+    <param name="discovery_rate" value="0.05"/>
+    <param name="estimation_rate" value="0.1"/>
+    <param name="estimation_confidence" value="1.0"/>
+  </node>
+
+  <node pkg="tf" type="static_transform_publisher" name="world_to_$(arg first_tb3)_tf_broadcaster"  args="0 0 0 0 0 0 /map /$(arg first_tb3)/map 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="world_to_$(arg second_tb3)_tf_broadcaster" args="0 0 0 0 0 0 /map /$(arg second_tb3)/map 100"/>
+  <node pkg="tf" type="static_transform_publisher" name="world_to_$(arg third_tb3)_tf_broadcaster" args="0 0 0 0 0 0 /map /$(arg third_tb3)/map 100"/>
+
+  <!-- rviz -->
+  <group if="$(arg open_rviz)"> 
+    <!-- <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find turtlebot3_gazebo)/rviz/multi_turtlebot3_slam.rviz"/> -->
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find multi_robot)/rviz/slam.rviz"/>
+  </group>
+</launch>
