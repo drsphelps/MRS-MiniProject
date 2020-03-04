@@ -1,32 +1,4 @@
 <launch>
-<<<<<<< HEAD
-  <!-- Arguments -->
-  <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
-  <arg name="slam_methods" default="gmapping" doc="slam type [gmapping]"/>
-  <arg name="configuration_basename" default="turtlebot3_lds_2d.lua"/>
-  <arg name="set_base_frame" default="base_footprint"/>
-  <arg name="set_odom_frame" default="odom"/>
-  <arg name="set_map_frame"  default="map"/>
-  <arg name="open_rviz" default="true"/>
-
-  <!-- TurtleBot3 -->
-  <include file="$(find turtlebot3_bringup)/launch/includes/description.launch.xml">
-    <arg name="model" value="$(arg model)" />
-  </include>
-  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
-    <param name="publish_frequency" type="double" value="50.0" />
-    <param name="tf_prefix" value=""/>
-  </node>
-  <node pkg="tf" type="static_transform_publisher" name="map_broadcaster" args="0 0 0 0 0 0 map occupancy_grid 100" />
-
-  <!-- SLAM: Gmapping -->
-  <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen">
-    <param name="base_frame" value="$(arg set_base_frame)"/>
-    <param name="odom_frame" value="$(arg set_odom_frame)"/>
-    <param name="map_frame"  value="$(arg set_map_frame)"/>
-    <param name="map_update_interval" value="2.0"/>
-    <param name="maxUrange" value="3.0"/>
-=======
   <arg name="ns" default="t0"/>
 
   <!-- Arguments -->
@@ -69,7 +41,6 @@
     <param name="delta" value="0.05"/>
     <param name="lskip" value="0"/>
     <param name="particles" value="120"/>
->>>>>>> master
     <param name="sigma" value="0.05"/>
     <param name="kernelSize" value="1"/>
     <param name="lstep" value="0.05"/>
@@ -77,19 +48,6 @@
     <param name="iterations" value="5"/>
     <param name="lsigma" value="0.075"/>
     <param name="ogain" value="3.0"/>
-<<<<<<< HEAD
-    <param name="lskip" value="0"/>
-    <param name="minimumScore" value="50"/>
-    <param name="srr" value="0.1"/>
-    <param name="srt" value="0.2"/>
-    <param name="str" value="0.1"/>
-    <param name="stt" value="0.2"/>
-    <param name="linearUpdate" value="1.0"/>
-    <param name="angularUpdate" value="0.2"/>
-    <param name="temporalUpdate" value="0.5"/>
-    <param name="resampleThreshold" value="0.5"/>
-    <param name="particles" value="100"/>
-=======
     <param name="srr" value="0.01"/>
     <param name="srt" value="0.02"/>
     <param name="str" value="0.01"/>
@@ -130,14 +88,10 @@
     <param name="str" value="0.01"/>
     <param name="stt" value="0.02"/>
     <param name="resampleThreshold" value="0.5"/>
->>>>>>> master
     <param name="xmin" value="-10.0"/>
     <param name="ymin" value="-10.0"/>
     <param name="xmax" value="10.0"/>
     <param name="ymax" value="10.0"/>
-<<<<<<< HEAD
-    <param name="delta" value="0.05"/>
-=======
     <param name="llsamplerange" value="0.01"/>
     <param name="llsamplestep" value="0.01"/>
     <param name="lasamplerange" value="0.005"/>
@@ -173,21 +127,11 @@
     <param name="ymin" value="-10.0"/>
     <param name="xmax" value="10.0"/>
     <param name="ymax" value="10.0"/>
->>>>>>> master
     <param name="llsamplerange" value="0.01"/>
     <param name="llsamplestep" value="0.01"/>
     <param name="lasamplerange" value="0.005"/>
     <param name="lasamplestep" value="0.005"/>
   </node>
-<<<<<<< HEAD
-
-  <!-- rviz -->
-  <group if="$(arg open_rviz)"> 
-    <node pkg="rviz" type="rviz" name="rviz" required="true"
-          args="-d $(find turtlebot3_slam)/rviz/turtlebot3_$(arg slam_methods).rviz"/>
-  </group>
-</launch>
-=======
   <group ns="$(arg first_tb3)/map_merge">
     <param name="init_pose_x"   value="$(arg first_tb3_x_pos)"/>
     <param name="init_pose_y"   value="$(arg first_tb3_y_pos)"/>
@@ -230,4 +174,3 @@
           args="-d $(find multi_robot)/rviz/slam.rviz"/>
   </group>
 </launch>
->>>>>>> master
