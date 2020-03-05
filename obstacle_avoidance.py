@@ -7,6 +7,10 @@ from __future__ import print_function
 import argparse
 import numpy as np
 import rospy
+import rrt
+from tf import TransformListener
+from nav_msgs.msg import OccupancyGrid
+from geometry_msgs.msg import PoseStamped
 
 # Robot motion commands:
 # http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html
@@ -101,6 +105,54 @@ class GroundtruthPose(object):
     def pose(self):
         return self._pose
 
+class SLAM(object):
+  def __init__(self, name):
+    rospy.Subscriber(name + '/map', OccupancyGrid, self.callback)
+    self.name = name
+    self._tf = TransformListener()
+    self._occupancy_grid = None
+    self._pose = np.array([np.nan, np.nan, np.nan], dtype=np.float32)
+    
+  def callback(self, msg):
+    values = np.array(msg.data, dtype=np.int8).reshape((msg.info.width, msg.info.height))
+    processed = np.empty_like(values)
+    processed[:] = rrt.FREE
+    processed[values < 0] = rrt.UNKNOWN
+    processed[values > 50] = rrt.OCCUPIED
+    processed = processed.T
+    origin = [msg.info.origin.position.x, msg.info.origin.position.y, 0.]
+    resolution = msg.info.resolution
+    self._occupancy_grid = rrt.OccupancyGrid(processed, origin, resolution)
+
+  def update(self):
+    # Get pose w.r.t. map.
+    a = 'occupancy_grid'
+    b = self.name + '/base_link'
+    if self._tf.frameExists(a) and self._tf.frameExists(b):
+      try:
+        t = rospy.Time(0)
+        position, orientation = self._tf.lookupTransform('/' + a, '/' + b, t)
+        self._pose[X] = position[X]
+        self._pose[Y] = position[Y]
+        _, _, self._pose[YAW] = euler_from_quaternion(orientation)
+      except Exception as e:
+        print(e)
+    else:
+      print('Unable to find:', self._tf.frameExists(a), self._tf.frameExists(b))
+    pass
+
+  @property
+  def ready(self):
+    return self._occupancy_grid is not None and not np.isnan(self._pose[0])
+
+  @property
+  def pose(self):
+    return self._pose
+
+  @property
+  def occupancy_grid(self):
+    return self._occupancy_grid
+
 
 class Robot(object):
     def __init__(self, name):
@@ -110,6 +162,7 @@ class Robot(object):
         self.laser = SimpleLaser(name=name)
         self.name = name
         self.vel_msg = Twist()
+        self.slam = SLAM(self.name)
         with open('/tmp/gazebo_exercise_'+self.name+'.txt', 'w'):
             pass
 
@@ -125,8 +178,8 @@ class Robot(object):
         u = 1 - ((vr + vl) / 2)
         w = (vr - vl)
 
-        self.vel_msg.linear.x = u / 4.
-        self.vel_msg.angular.z = w / 6.
+        self.vel_msg.linear.x = u / 10.
+        self.vel_msg.angular.z = w / 15.
 
     def write_pose(self):        
         with open('/tmp/gazebo_exercise_'+self.name+'.txt', 'a') as fp:
@@ -145,7 +198,7 @@ class Leader(Robot):
             return
         self.braitenberg(*self.laser.measurements)
         self.publisher.publish(self.vel_msg)
-        self.pose_history.append(self.groundtruth.pose)
+        self.pose_history.append(self.slam.pose)
         if not len(self.pose_history) % 10:
             self.write_pose()
 
@@ -155,6 +208,7 @@ class Follower(Robot):
         super(Follower, self).__init__(name)
         self.relative_position = rel_pos
         self.epsilon = 0.2
+        self.path = []
 
     def update_velocities(self, rate_limiter, leader_pose):
         if not self.laser.ready or not self.groundtruth.ready:
@@ -165,21 +219,23 @@ class Follower(Robot):
         else:
             self.braitenberg(*self.laser.measurements)
         self.publisher.publish(self.vel_msg)
-        self.pose_history.append(self.groundtruth.pose)
+        self.pose_history.append(self.slam.pose)
         if not len(self.pose_history) % 10:
             self.write_pose()
 
     def follow(self, leader_pose):
         desired_position = leader_pose[:-1] + rotate(self.relative_position[:-1], leader_pose[YAW])
-        tow = self.groundtruth.pose[:-1] + rotate(np.array([0.1,0.]), self.groundtruth.pose[YAW])
-
+        tow = self.slam.pose[:-1] + rotate(np.array([0.1,0.]), self.slam.pose[YAW])
         vector_to_travel = desired_position - tow
-
-        self.linearised_feedback(vector_to_travel)
+        if np.linalg.norm(vector_to_travel) < 0.2:
+            self.vel_msg.linear.x = 0
+            self.vel_msg.angular.z = 0
+        else:
+            self.linearised_feedback(vector_to_travel)
 
     def linearised_feedback(self, velocity):
-        velocity = cap(velocity, 0.5)
-        pose = self.groundtruth.pose
+        velocity = cap(velocity, 0.2)
+        pose = self.slam.pose
 
         u = velocity[X] * np.cos(pose[YAW]) + velocity[Y] * np.sin(pose[YAW])
         w = (-velocity[X] * np.sin(pose[YAW]) + velocity[Y] * np.cos(pose[YAW])) / self.epsilon
@@ -188,8 +244,8 @@ class Follower(Robot):
         self.vel_msg.angular.z = w
 
     def obstacle(self, front, front_left, front_right, left, right):
-        return min([front, front_left, front_right]) < 0.5
-            
+        # return min([front, front_left, front_right]) < 0.5
+        return False
 
 def cap(v, max_speed):
   n = np.linalg.norm(v)
@@ -203,7 +259,7 @@ def run(args):
     # avoidance_method = globals()[args.mode]
     
     # Update control every 100 ms.
-    rate_limiter = rospy.Rate(100)
+    rate_limiter = rospy.Rate(1000)
     # Leader robot
     l = Leader("t0")
     # Follower robot 1
@@ -213,10 +269,13 @@ def run(args):
 
 
     while not rospy.is_shutdown():
+        l.slam.update()
+        f1.slam.update()
+        f2.slam.update()
         # Make sure all measurements are ready.
         l.update_velocities(rate_limiter)
-        f1.update_velocities(rate_limiter, l.groundtruth.pose)
-        f2.update_velocities(rate_limiter, l.groundtruth.pose)
+        f1.update_velocities(rate_limiter, l.slam.pose)
+        f2.update_velocities(rate_limiter, l.slam.pose)
         rate_limiter.sleep()
 
 
