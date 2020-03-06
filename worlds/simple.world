@@ -50,7 +50,7 @@
       </camera>
     </gui>
 
-    <!-- <actor name="actor">
+    <actor name="actor">
       <skin>
         <filename>walk.dae</filename>
         <scale>1.0</scale>
@@ -76,14 +76,14 @@
           1.0
         "/>
         <scaling collision="LeftLeg_LeftFoot_collision" scale="
-          8.0
-          8.0
+          10.0
+          10.0
           1.0
         "/>
         <scaling collision="LeftFoot_LeftToeBase_collision" scale="
-          4.0
-          4.0
-          1.5
+          8.0
+          8.0
+          3.0
         "/>
         <scaling collision="RHipJoint_RightUpLeg_collision" scale="
           0.01
@@ -96,14 +96,14 @@
           1.0
         "/>
         <scaling collision="RightLeg_RightFoot_collision" scale="
-          8.0
-          8.0
+          10.0
+          10.0
           1.0
         "/>
         <scaling collision="RightFoot_RightToeBase_collision" scale="
-          4.0
-          4.0
-          1.5
+          8.0
+          8.0
+          3.0
         "/>
         <scaling collision="LowerBack_Spine_collision" scale="
           12.0
@@ -167,6 +167,6 @@
         "/>
       </plugin>
       <pose>-2 -2 1.2138 1.5707 0 1.5707</pose>
-    </actor> -->
+    </actor>
   </world>
 </sdf>

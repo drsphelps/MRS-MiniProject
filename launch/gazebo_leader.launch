@@ -2,10 +2,10 @@
   <arg name="use_gui" default="true"/>
   
   <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
-  <arg name="x_pos" default="-2.0"/>
-  <arg name="y_pos" default="-1.0"/>
+  <arg name="x_pos" default="-2.5"/>
+  <arg name="y_pos" default="-2.0"/>
   <arg name="z_pos" default=" 0.0"/>
-  <arg name="yaw"   default=" 0.5236"/>
+  <arg name="yaw"   default=" 0.0"/>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find multi_robot)/worlds/simple.world"/>
