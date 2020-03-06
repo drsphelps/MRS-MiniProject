@@ -74,17 +74,6 @@ class SLAM(object):
     a = 'occupancy_grid'
     # b = self.name + '/base_link'
     b = 'base_link'
-    # if self._tf.frameExists(a) and self._tf.frameExists(b):
-    #   try:
-    #     t = rospy.Time(0)
-    #     position, orientation = self._tf.lookupTransform('/' + a, '/' + b, t)
-    #     self._pose[X] = position[X]
-    #     self._pose[Y] = position[Y]
-    #     _, _, self._pose[YAW] = euler_from_quaternion(orientation)
-    #   except Exception as e:
-    #     print(e)
-    # else:
-    #   print('Unable to find:', self._tf.frameExists(a), self._tf.frameExists(b))
     try:
         t = rospy.Time(0)
         self._tf.waitForTransform('/' + a, '/' + b, t, rospy.Duration(4.0))
@@ -190,9 +179,6 @@ class Leader(Robot):
         
         # Get centroid position relative to the robot (base_link)
         centroid = self.laser.centroid
-
-        print("Centroid:")
-        print(centroid)
         
         # Publish current centroid
         marker = Marker()
@@ -263,8 +249,6 @@ class LeaderLaser(object):
 
         # Distance measurements and angles at which they were measured
         # i.e. (measurements[0], angles[0]), (measurements[1], angles[1]), ...
-        # self._angles = np.linspace(start=self._min_angle, stop=self._max_angle, num=100)
-        # self._measurements = [float('inf')] * len(self._angles)
         self._angles = []
         self._measurements = []
 
@@ -305,9 +289,6 @@ class LeaderLaser(object):
                 points.append(point)
         self._point_cloud = np.array(points, dtype=np.float32)
 
-        print("Point cloud:")
-        print(self._point_cloud)
-
     @property
     def ready(self):
         return len(self._measurements) == 0 or not np.isnan(self._measurements[0])
@@ -327,8 +308,6 @@ class LeaderLaser(object):
     @property
     # Centroid is relative to the robot (base_link)
     def centroid(self):
-        print("Point cloud:")
-        print(self._point_cloud)
         if len(self._point_cloud) == 0:
             return np.array([0., 0.], dtype=np.float32)
         return np.mean(self._point_cloud, axis=0)[:-1]
@@ -450,10 +429,6 @@ def run(args):
 
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser(description='Runs obstacle avoidance')
-    # parser.add_argument('--mode', action='store', default='braitenberg',
-    #                     help='Method.', choices=['braitenberg', 'rule_based'])
-    # args, unknown = parser.parse_known_args()
     args = None
     try:
         run(args)
