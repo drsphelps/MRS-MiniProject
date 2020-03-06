@@ -110,10 +110,8 @@ libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_common.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_gimpact.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_opcode.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_opende_ou.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_math.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_ccd.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_thread.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_signals.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_system.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_filesystem.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_program_options.so
@@ -134,10 +132,10 @@ libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_chrono.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libpthread.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libOgreTerrain.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libOgrePaging.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libignition-transport3.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libprotobuf.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libignition-msgs0.so.0.7.0
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libignition-math3.so.3.3.0
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libignition-transport4.so.4.0.0
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libignition-msgs1.so.1.0.0
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libignition-common1.so.1.1.1
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libignition-fuel_tools1.so.1.2.0
 libactor_collisions_plugin.so: /usr/lib/liblapack.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_client.so
@@ -153,10 +151,8 @@ libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_common.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_gimpact.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_opcode.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_opende_ou.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_math.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libgazebo_ccd.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_thread.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_signals.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_system.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_filesystem.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_program_options.so
@@ -168,11 +164,7 @@ libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_atomic.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libpthread.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libsdformat.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libOgreMain.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libOgreTerrain.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libOgrePaging.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libignition-transport3.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_thread.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_signals.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_system.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_filesystem.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libboost_program_options.so
@@ -186,8 +178,21 @@ libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libsdformat.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libOgreMain.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libOgreTerrain.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libOgrePaging.so
-libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libignition-transport3.so
 libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libprotobuf.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libprotobuf.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libignition-math4.so.4.0.0
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libuuid.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libuuid.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libswscale-ffmpeg.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libswscale-ffmpeg.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libavdevice-ffmpeg.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libavdevice-ffmpeg.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libavformat-ffmpeg.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libavformat-ffmpeg.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libavcodec-ffmpeg.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libavcodec-ffmpeg.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libavutil-ffmpeg.so
+libactor_collisions_plugin.so: /usr/lib/x86_64-linux-gnu/libavutil-ffmpeg.so
 libactor_collisions_plugin.so: CMakeFiles/actor_collisions_plugin.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/andreea794/catkin_ws/src/multi_robot/plugins/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX shared library libactor_collisions_plugin.so"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/actor_collisions_plugin.dir/link.txt --verbose=$(VERBOSE)
