@@ -1,16 +1,11 @@
 <launch>
-  <!-- 
-       Default GUI to true for local Gazebo client. Allows override 
-       to set disable GUI for RoboMaker. See part0.launch. 
-  -->
   <arg name="use_gui" default="true"/>
+  
   <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
-  <arg name="first_tb3"  default="t0"/>
-
-  <arg name="first_tb3_x_pos" default="-3.0"/>
-  <arg name="first_tb3_y_pos" default="-2.0"/>
-  <arg name="first_tb3_z_pos" default=" 0.0"/>
-  <arg name="first_tb3_yaw"   default=" 0.0"/>
+  <arg name="x_pos" default="-2.0"/>
+  <arg name="y_pos" default="-1.0"/>
+  <arg name="z_pos" default=" 0.0"/>
+  <arg name="yaw"   default=" 0.5236"/>
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="world_name" value="$(find multi_robot)/worlds/simple.world"/>
@@ -21,15 +16,7 @@
     <arg name="debug" value="false"/>
   </include>  
 
-  <group ns = "$(arg first_tb3)">
-    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
-
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen">
-      <param name="publish_frequency" type="double" value="50.0" />
-      <param name="tf_prefix" value="$(arg first_tb3)" />
-    </node>
-    
-    <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg first_tb3) -x $(arg first_tb3_x_pos) -y $(arg first_tb3_y_pos) -z $(arg first_tb3_z_pos) -Y $(arg first_tb3_yaw) -param robot_description" />
-  </group>
-
+  <param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+  
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf"  args="-urdf -model turtlebot3_$(arg model) -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -Y $(arg yaw) -param robot_description" />
 </launch>

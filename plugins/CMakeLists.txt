@@ -9,3 +9,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 
 add_library(actor_plugin SHARED actor_plugin.cc)
 target_link_libraries(actor_plugin ${GAZEBO_LIBRARIES})
+
+add_library(actor_collisions_plugin SHARED actor_collisions_plugin.cc)
+target_link_libraries(actor_collisions_plugin ${GAZEBO_LIBRARIES})

@@ -60,13 +60,50 @@ CMAKE_SOURCE_DIR = /home/andreea794/catkin_ws/src/multi_robot/plugins
 CMAKE_BINARY_DIR = /home/andreea794/catkin_ws/src/multi_robot/plugins/build
 
 #=============================================================================
+# Target rules for target CMakeFiles/actor_collisions_plugin.dir
+
+# All Build rule for target.
+CMakeFiles/actor_collisions_plugin.dir/all:
+	$(MAKE) -f CMakeFiles/actor_collisions_plugin.dir/build.make CMakeFiles/actor_collisions_plugin.dir/depend
+	$(MAKE) -f CMakeFiles/actor_collisions_plugin.dir/build.make CMakeFiles/actor_collisions_plugin.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andreea794/catkin_ws/src/multi_robot/plugins/build/CMakeFiles --progress-num=1,2 "Built target actor_collisions_plugin"
+.PHONY : CMakeFiles/actor_collisions_plugin.dir/all
+
+# Include target in all.
+all: CMakeFiles/actor_collisions_plugin.dir/all
+
+.PHONY : all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/actor_collisions_plugin.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/andreea794/catkin_ws/src/multi_robot/plugins/build/CMakeFiles 2
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/actor_collisions_plugin.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/andreea794/catkin_ws/src/multi_robot/plugins/build/CMakeFiles 0
+.PHONY : CMakeFiles/actor_collisions_plugin.dir/rule
+
+# Convenience name for target.
+actor_collisions_plugin: CMakeFiles/actor_collisions_plugin.dir/rule
+
+.PHONY : actor_collisions_plugin
+
+# clean rule for target.
+CMakeFiles/actor_collisions_plugin.dir/clean:
+	$(MAKE) -f CMakeFiles/actor_collisions_plugin.dir/build.make CMakeFiles/actor_collisions_plugin.dir/clean
+.PHONY : CMakeFiles/actor_collisions_plugin.dir/clean
+
+# clean rule for target.
+clean: CMakeFiles/actor_collisions_plugin.dir/clean
+
+.PHONY : clean
+
+#=============================================================================
 # Target rules for target CMakeFiles/actor_plugin.dir
 
 # All Build rule for target.
 CMakeFiles/actor_plugin.dir/all:
 	$(MAKE) -f CMakeFiles/actor_plugin.dir/build.make CMakeFiles/actor_plugin.dir/depend
 	$(MAKE) -f CMakeFiles/actor_plugin.dir/build.make CMakeFiles/actor_plugin.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andreea794/catkin_ws/src/multi_robot/plugins/build/CMakeFiles --progress-num=1,2 "Built target actor_plugin"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/andreea794/catkin_ws/src/multi_robot/plugins/build/CMakeFiles --progress-num=3,4 "Built target actor_plugin"
 .PHONY : CMakeFiles/actor_plugin.dir/all
 
 # Include target in all.

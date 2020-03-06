@@ -111,6 +111,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named actor_collisions_plugin
+
+# Build rule for target.
+actor_collisions_plugin: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 actor_collisions_plugin
+.PHONY : actor_collisions_plugin
+
+# fast build rule for target.
+actor_collisions_plugin/fast:
+	$(MAKE) -f CMakeFiles/actor_collisions_plugin.dir/build.make CMakeFiles/actor_collisions_plugin.dir/build
+.PHONY : actor_collisions_plugin/fast
+
+#=============================================================================
 # Target rules for targets named actor_plugin
 
 # Build rule for target.
@@ -122,6 +135,33 @@ actor_plugin: cmake_check_build_system
 actor_plugin/fast:
 	$(MAKE) -f CMakeFiles/actor_plugin.dir/build.make CMakeFiles/actor_plugin.dir/build
 .PHONY : actor_plugin/fast
+
+actor_collisions_plugin.o: actor_collisions_plugin.cc.o
+
+.PHONY : actor_collisions_plugin.o
+
+# target to build an object file
+actor_collisions_plugin.cc.o:
+	$(MAKE) -f CMakeFiles/actor_collisions_plugin.dir/build.make CMakeFiles/actor_collisions_plugin.dir/actor_collisions_plugin.cc.o
+.PHONY : actor_collisions_plugin.cc.o
+
+actor_collisions_plugin.i: actor_collisions_plugin.cc.i
+
+.PHONY : actor_collisions_plugin.i
+
+# target to preprocess a source file
+actor_collisions_plugin.cc.i:
+	$(MAKE) -f CMakeFiles/actor_collisions_plugin.dir/build.make CMakeFiles/actor_collisions_plugin.dir/actor_collisions_plugin.cc.i
+.PHONY : actor_collisions_plugin.cc.i
+
+actor_collisions_plugin.s: actor_collisions_plugin.cc.s
+
+.PHONY : actor_collisions_plugin.s
+
+# target to generate assembly for a file
+actor_collisions_plugin.cc.s:
+	$(MAKE) -f CMakeFiles/actor_collisions_plugin.dir/build.make CMakeFiles/actor_collisions_plugin.dir/actor_collisions_plugin.cc.s
+.PHONY : actor_collisions_plugin.cc.s
 
 actor_plugin.o: actor_plugin.cc.o
 
@@ -157,8 +197,12 @@ help:
 	@echo "... clean"
 	@echo "... depend"
 	@echo "... rebuild_cache"
+	@echo "... actor_collisions_plugin"
 	@echo "... edit_cache"
 	@echo "... actor_plugin"
+	@echo "... actor_collisions_plugin.o"
+	@echo "... actor_collisions_plugin.i"
+	@echo "... actor_collisions_plugin.s"
 	@echo "... actor_plugin.o"
 	@echo "... actor_plugin.i"
 	@echo "... actor_plugin.s"

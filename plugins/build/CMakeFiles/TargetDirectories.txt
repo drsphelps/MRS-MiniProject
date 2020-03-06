@@ -1,3 +1,4 @@
 /home/andreea794/catkin_ws/src/multi_robot/plugins/build/CMakeFiles/rebuild_cache.dir
+/home/andreea794/catkin_ws/src/multi_robot/plugins/build/CMakeFiles/actor_collisions_plugin.dir
 /home/andreea794/catkin_ws/src/multi_robot/plugins/build/CMakeFiles/edit_cache.dir
 /home/andreea794/catkin_ws/src/multi_robot/plugins/build/CMakeFiles/actor_plugin.dir
