@@ -72,8 +72,7 @@ class SLAM(object):
   def update(self):
     # Get pose w.r.t. map.
     a = 'occupancy_grid'
-    # b = self.name + '/base_link'
-    b = 'base_link'
+    b = self.name + '/base_link'                                        
     try:
         t = rospy.Time(0)
         self._tf.waitForTransform('/' + a, '/' + b, t, rospy.Duration(4.0))
@@ -131,11 +130,9 @@ class GroundtruthPose(object):
 
 class Robot(object):
     def __init__(self, name):
-        # self.groundtruth = GroundtruthPose(name)
-        self.groundtruth = GroundtruthPose()
+        self.groundtruth = GroundtruthPose(name)
         self.pose_history = []
-        # self.publisher = rospy.Publisher('/' + name + '/cmd_vel', Twist, queue_size=5)
-        self.publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
+        self.publisher = rospy.Publisher('/' + name + '/cmd_vel', Twist, queue_size=5)
         self.name = name
         self.vel_msg = Twist()
         self.slam = SLAM(name)
@@ -240,8 +237,7 @@ class Leader(Robot):
 
 class LeaderLaser(object):
     def __init__(self, name):
-        # rospy.Subscriber('/' + name + '/scan', LaserScan, self.callback)
-        rospy.Subscriber('/scan', LaserScan, self.callback)
+        rospy.Subscriber('/' + name + '/scan', LaserScan, self.callback)
 
         # Take measurements between -pi/6 and pi/6
         self._min_angle = -np.pi / 6.
@@ -407,24 +403,22 @@ def run(args):
     # Update control every 100 ms.
     rate_limiter = rospy.Rate(1000)
 
-    l = Leader("")
-
-    # # Leader robot
-    # l = Leader("t0")
-    # # Follower robot 1
-    # f1 = Follower("t1", np.array([-.2, .2, 0.]))
-    # # Follower robot 2
-    # f2 = Follower("t2", np.array([-.2, -.2, 0.]))
+    # Leader robot
+    l = Leader("t0")
+    # Follower robot 1
+    f1 = Follower("t1", np.array([-.2, .2, 0.]))
+    # Follower robot 2
+    f2 = Follower("t2", np.array([-.2, -.2, 0.]))
 
 
     while not rospy.is_shutdown():
         l.slam.update()
-        # f1.slam.update()
-        # f2.slam.update()
+        f1.slam.update()
+        f2.slam.update()
         # Make sure all measurements are ready.
         l.update_velocities(rate_limiter)
-        # f1.update_velocities(rate_limiter, l.slam.pose)
-        # f2.update_velocities(rate_limiter, l.slam.pose)
+        f1.update_velocities(rate_limiter, l.slam.pose)
+        f2.update_velocities(rate_limiter, l.slam.pose)
         rate_limiter.sleep()
 
 

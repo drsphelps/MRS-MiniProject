@@ -50,7 +50,7 @@
       </camera>
     </gui>
 
-    <actor name="actor">
+    <!-- <actor name="actor">
       <skin>
         <filename>walk.dae</filename>
         <scale>1.0</scale>
@@ -167,6 +167,6 @@
         "/>
       </plugin>
       <pose>-2 -2 1.2138 1.5707 0 1.5707</pose>
-    </actor>
+    </actor> -->
   </world>
 </sdf>

@@ -1,5 +1,5 @@
 <launch>
-  <arg name="ns" default="t0"/>
+  <arg name="ns" default="t"/>
 
   <!-- Arguments -->
   <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
@@ -23,9 +23,6 @@
   <arg name="third_tb3_y_pos" default=" 1.0"/>
   <arg name="third_tb3_z_pos" default=" 0.0"/>
   <arg name="third_tb3_yaw"   default=" 0.0"/>
-
-  <arg name="slam_methods" default="gmapping" doc="slam type [gmapping]"/>
-  <arg name="open_rviz" default="true"/>
 
   <node pkg="tf" type="static_transform_publisher" name="map_broadcaster" args="-10 -10 0 0 0 0 map occupancy_grid 100" />
 
