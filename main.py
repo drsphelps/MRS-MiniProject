@@ -10,6 +10,8 @@ import os
 import rospy
 import rrt
 import sys
+from sklearn.cluster import DBSCAN
+import time
 
 # Robot motion commands:
 # http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html
@@ -179,7 +181,7 @@ class Leader(Robot):
         
         # Publish current centroid
         marker = Marker()
-        marker.header.frame_id = "base_link"
+        marker.header.frame_id = "t0/base_link"
         marker.type = marker.POINTS
         marker.action = marker.ADD
         marker.pose.orientation.w = 1
@@ -196,7 +198,7 @@ class Leader(Robot):
 
         # Publish current PointCloud
         pc = Marker()
-        pc.header.frame_id = "base_link"
+        pc.header.frame_id = "t0/base_link"
         pc.type = pc.POINTS
         pc.action = pc.ADD
         pc.pose.orientation.w = 1
@@ -236,12 +238,13 @@ class Leader(Robot):
     
 
 class LeaderLaser(object):
-    def __init__(self, name):
+    def __init__(self, name, mini=(-np.pi / 6.), maxi=(np.pi / 6.), max_dist=1.):
         rospy.Subscriber('/' + name + '/scan', LaserScan, self.callback)
 
         # Take measurements between -pi/6 and pi/6
-        self._min_angle = -np.pi / 6.
-        self._max_angle = np.pi / 6.
+        self._min_angle = mini
+        self._max_angle = maxi
+        self._max_dist = max_dist
 
         # Distance measurements and angles at which they were measured
         # i.e. (measurements[0], angles[0]), (measurements[1], angles[1]), ...
@@ -250,7 +253,7 @@ class LeaderLaser(object):
 
         # PointCloud of the laser measurements between _min_angle and _max_angle
         # point_cloud[i] is a point [x, y, z]
-        self._point_cloud = None
+        self._point_cloud = np.array([[]])
 
     def callback(self, msg):
         # Helper for angles.
@@ -269,7 +272,7 @@ class LeaderLaser(object):
         for i, d in enumerate(msg.ranges):
             # Angle at which the distance d was measured
             angle = msg.angle_min + i * msg.angle_increment
-            if not np.isnan(d) and not np.isinf(d) and _within(angle, self._min_angle, self._max_angle) and d < 1.:
+            if not np.isnan(d) and not np.isinf(d) and _within(angle, self._min_angle, self._max_angle) and d < self._max_dist:
                 self._angles.append(angle)
                 self._measurements.append(d)
         
@@ -304,16 +307,46 @@ class LeaderLaser(object):
     @property
     # Centroid is relative to the robot (base_link)
     def centroid(self):
-        if len(self._point_cloud) == 0:
+        if self._point_cloud is None or len(self._point_cloud) == 0:
             return np.array([0., 0.], dtype=np.float32)
         return np.mean(self._point_cloud, axis=0)[:-1]
+
+    @property
+    # Returns the cluster centres
+    def clusters(self):
+        if self._point_cloud is None or len(self._point_cloud) == 0:
+            return np.array([[0., 0.]], dtype=np.float32)
+
+        model = DBSCAN(0.05, min_samples=2)
+        model.fit(self._point_cloud)
+        labels = model.labels_
+        clusters = []
+        for lab in range(0, np.max(labels) + 1):
+            cluster = []
+            for i in range(0, min(len(labels), len(self._point_cloud))):
+                if labels[i] == lab:
+                    cluster.append(self._point_cloud[i])
+            clusters.append(cluster)
+        clusters = np.array(clusters)
+        centroids = np.array([get_centroid(ps) for ps in clusters])
+        
+        return centroids
+
+
+def get_centroid(points):
+    if len(points) == 0:
+        return np.array([0., 0.])
+    return np.mean(points, axis=0)[:-1]
 
 
 class Follower(Robot):
     def __init__(self, name, rel_pos):
         super(Follower, self).__init__(name)
-        self.laser = FollowerLaser(name)
+        angle = np.arctan(-rel_pos[1]/-rel_pos[0])
+
+        self.laser = LeaderLaser(name, angle + (-np.pi / 6.), angle + (np.pi / 6.), 2)
         self.relative_position = rel_pos
+        self._centroid_publisher = rospy.Publisher('/' + name + '/centroid', Marker, queue_size=1)
         self.epsilon = 0.2
         self.path = []
 
@@ -321,28 +354,49 @@ class Follower(Robot):
         if not self.laser.ready or not self.groundtruth.ready:
             rate_limiter.sleep()
             return
-        if not self.obstacle(*self.laser.measurements):
-            self.follow(leader_pose)
-        else:
-            self.braitenberg(*self.laser.measurements)
+        self.follow(leader_pose)
         self.publisher.publish(self.vel_msg)
         self.pose_history.append(self.slam.pose)
         if not len(self.pose_history) % 10:
             self.write_pose()
 
     def follow(self, leader_pose):
-        desired_position = leader_pose[:-1] + rotate(self.relative_position[:-1], leader_pose[YAW])
-        tow = self.slam.pose[:-1] + rotate(np.array([0.1,0.]), self.slam.pose[YAW])
-        vector_to_travel = desired_position - tow
-        if np.linalg.norm(vector_to_travel) < 0.2:
-            self.vel_msg.linear.x = 0
-            self.vel_msg.angular.z = 0
-        else:
-            self.linearised_feedback(vector_to_travel)
+        clusters = self.laser.clusters
+        print(clusters)
+        if clusters.shape[0] != 0:
+            cluster = self.get_closest(clusters)
+            print(cluster)
+            # Publish current centroid
+            marker = Marker()
+            marker.header.frame_id = self.name + "/base_link"
+            marker.type = marker.POINTS
+            marker.action = marker.ADD
+            marker.pose.orientation.w = 1
+            p = Point(cluster[0], cluster[1], 0.)
+            marker.points = [p]
+            t = rospy.Duration()
+            marker.lifetime = t
+            marker.scale.x = 0.1
+            marker.scale.y = 0.1
+            marker.scale.z = 0.1
+            marker.color.a = 1.0
+            if self.name == "t1":
+                marker.color.b = 1.0
+            if self.name == "t2":
+                marker.color.g = 1.0
+            self._centroid_publisher.publish(marker)
+            desired_position = cluster + self.relative_position
+            tow = np.array([0.1,0.])
+            vector_to_travel = desired_position - tow
+            if np.linalg.norm(vector_to_travel) < 0.2 or np.linalg.norm(cluster) == 0.:
+                self.vel_msg.linear.x = 0
+                self.vel_msg.angular.z = 0
+            else:
+                self.linearised_feedback(vector_to_travel)
 
     def linearised_feedback(self, velocity):
         velocity = cap(velocity, SPEED)
-        pose = self.slam.pose
+        pose = np.array([0.0, 0.0, 0.0])
 
         u = velocity[X] * np.cos(pose[YAW]) + velocity[Y] * np.sin(pose[YAW])
         w = (-velocity[X] * np.sin(pose[YAW]) + velocity[Y] * np.cos(pose[YAW])) / self.epsilon
@@ -353,6 +407,17 @@ class Follower(Robot):
     def obstacle(self, front, front_left, front_right, left, right):
         # return min([front, front_left, front_right]) < 0.5
         return False
+    
+    def get_closest(self, clusters):
+        min_dist = -1
+        min_cluster = np.array([0., 0.])
+        for cluster in clusters:
+            dist = np.linalg.norm(cluster - self.relative_position)
+            if min_dist == -1 or dist < min_dist:
+                min_dist = dist
+                min_cluster = cluster
+        return min_cluster
+
 
 
 class FollowerLaser(object):
@@ -406,9 +471,9 @@ def run(args):
     # Leader robot
     l = Leader("t0")
     # Follower robot 1
-    f1 = Follower("t1", np.array([-.2, .2, 0.]))
+    f1 = Follower("t1", np.array([-.3, -.3]))
     # Follower robot 2
-    f2 = Follower("t2", np.array([-.2, -.2, 0.]))
+    f2 = Follower("t2", np.array([-.3, .3]))
 
 
     while not rospy.is_shutdown():
@@ -420,6 +485,7 @@ def run(args):
         f1.update_velocities(rate_limiter, l.slam.pose)
         f2.update_velocities(rate_limiter, l.slam.pose)
         rate_limiter.sleep()
+        l.laser.clusters
 
 
 if __name__ == '__main__':
