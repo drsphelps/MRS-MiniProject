@@ -30,6 +30,19 @@ from gazebo_msgs.msg import ModelStates
 from visualization_msgs.msg import Marker
 # For pose information.
 from tf.transformations import euler_from_quaternion
+# For clustering the points
+from sklearn.cluster import DBSCAN
+# For colouring clusters
+from std_msgs.msg import ColorRGBA
+# For getting distances between centroids
+from sklearn.metrics.pairwise import euclidean_distances
+
+CLUSTER_COLOURS = [
+    ColorRGBA(140.0, 224.0, 255.0, 1.0),
+    ColorRGBA(12.0, 227.0, 208.0, 1.0),
+    ColorRGBA(252.0, 255.0, 89.0, 1.0),
+    ColorRGBA(127.0, 31.0, 127.0, 1.0),
+    ColorRGBA(232.0, 163.0, 74.0, 1.0)]
 
 SPEED = 0.2
 
@@ -72,8 +85,7 @@ class SLAM(object):
   def update(self):
     # Get pose w.r.t. map.
     a = 'occupancy_grid'
-    # b = self.name + '/base_link'
-    b = 'base_link'
+    b = 'base_link'                                        
     try:
         t = rospy.Time(0)
         self._tf.waitForTransform('/' + a, '/' + b, t, rospy.Duration(4.0))
@@ -131,10 +143,8 @@ class GroundtruthPose(object):
 
 class Robot(object):
     def __init__(self, name):
-        # self.groundtruth = GroundtruthPose(name)
         self.groundtruth = GroundtruthPose()
         self.pose_history = []
-        # self.publisher = rospy.Publisher('/' + name + '/cmd_vel', Twist, queue_size=5)
         self.publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
         self.name = name
         self.vel_msg = Twist()
@@ -170,8 +180,6 @@ class Leader(Robot):
         self.laser = LeaderLaser(name=name)
         # For feedback linearization
         self.epsilon = 0.1
-        self._pc_publisher = rospy.Publisher('/pc', Marker, queue_size=5)
-        self._centroid_publisher = rospy.Publisher('/centroid', Marker, queue_size=1)
     
     def update_velocities(self, rate_limiter):
         if not self.laser.ready or not self.slam.ready:
@@ -179,46 +187,11 @@ class Leader(Robot):
         
         # Get centroid position relative to the robot (base_link)
         centroid = self.laser.centroid
-        
-        # Publish current centroid
-        marker = Marker()
-        marker.header.frame_id = "base_link"
-        marker.type = marker.POINTS
-        marker.action = marker.ADD
-        marker.pose.orientation.w = 1
-        p = Point(centroid[0], centroid[1], 0.)
-        marker.points = [p]
-        t = rospy.Duration()
-        marker.lifetime = t
-        marker.scale.x = 0.1
-        marker.scale.y = 0.1
-        marker.scale.z = 0.1
-        marker.color.a = 1.0
-        marker.color.r = 1.0
-        self._centroid_publisher.publish(marker)
-
-        # Publish current PointCloud
-        pc = Marker()
-        pc.header.frame_id = "base_link"
-        pc.type = pc.POINTS
-        pc.action = pc.ADD
-        pc.pose.orientation.w = 1
-        for point in self.laser.point_cloud:
-            pc.points.append(Point(point[0], point[1], point[2]))
-        t = rospy.Duration()
-        pc.lifetime = t
-        pc.scale.x = 0.05
-        pc.scale.y = 0.05
-        pc.color.a = 1.0
-        pc.color.r = 1.0
-        pc.color.g = 0.0
-        pc.color.b = 1.0
-        self._pc_publisher.publish(pc)
 
         if np.linalg.norm(centroid) < 0.4:
             # We have reached the desired position, so stop
-            self.vel_msg.linear.x = 0
-            self.vel_msg.angular.z = 0
+            self.vel_msg.linear.x = 0.
+            self.vel_msg.angular.z = 0.
         else:
             self.linearised_feedback(centroid)
         
@@ -234,18 +207,26 @@ class Leader(Robot):
         u = velocity[X]
         w = velocity[Y] / self.epsilon
 
-        self.vel_msg.linear.x = u
+        self.vel_msg.linear.x = u * 1.4
         self.vel_msg.angular.z = w
     
 
 class LeaderLaser(object):
     def __init__(self, name):
-        # rospy.Subscriber('/' + name + '/scan', LaserScan, self.callback)
         rospy.Subscriber('/scan', LaserScan, self.callback)
+        # For publishing the clusters
+        self._clusters_publishers = [
+            rospy.Publisher('/cluster0', Marker, queue_size=5),
+            rospy.Publisher('/cluster1', Marker, queue_size=5),
+            rospy.Publisher('/cluster2', Marker, queue_size=5),
+            rospy.Publisher('/cluster3', Marker, queue_size=5),
+            rospy.Publisher('/cluster4', Marker, queue_size=5)]
+        # For publishing the centroid
+        self._centroid_publisher = rospy.Publisher('/centroid', Marker, queue_size=1)
 
         # Take measurements between -pi/6 and pi/6
-        self._min_angle = -np.pi / 6.
-        self._max_angle = np.pi / 6.
+        self._min_angle = -np.pi / 4.
+        self._max_angle = np.pi / 4.
 
         # Distance measurements and angles at which they were measured
         # i.e. (measurements[0], angles[0]), (measurements[1], angles[1]), ...
@@ -254,7 +235,7 @@ class LeaderLaser(object):
 
         # PointCloud of the laser measurements between _min_angle and _max_angle
         # point_cloud[i] is a point [x, y, z]
-        self._point_cloud = None
+        self._point_cloud = []
 
     def callback(self, msg):
         # Helper for angles.
@@ -273,7 +254,7 @@ class LeaderLaser(object):
         for i, d in enumerate(msg.ranges):
             # Angle at which the distance d was measured
             angle = msg.angle_min + i * msg.angle_increment
-            if not np.isnan(d) and not np.isinf(d) and _within(angle, self._min_angle, self._max_angle) and d < 1.:
+            if not np.isnan(d) and not np.isinf(d) and _within(angle, self._min_angle, self._max_angle) and d < 1.5:
                 self._angles.append(angle)
                 self._measurements.append(d)
         
@@ -308,9 +289,78 @@ class LeaderLaser(object):
     @property
     # Centroid is relative to the robot (base_link)
     def centroid(self):
-        if len(self._point_cloud) == 0:
+        point_cloud = self._point_cloud
+        if len(point_cloud) == 0:
             return np.array([0., 0.], dtype=np.float32)
-        return np.mean(self._point_cloud, axis=0)[:-1]
+
+        # DBSCAN clustering
+        model = DBSCAN(eps=0.1)
+        labels = model.fit_predict(point_cloud)
+        clusters = []
+        for i in range(0, np.max(labels) + 1):
+            clusters.append(point_cloud[np.nonzero(labels == i)])
+        clusters = np.array(clusters)
+
+        # Publish clusters using markers
+        for i in range(0, len(clusters)):
+            cluster = clusters[i]
+            pc = Marker()
+            pc.header.frame_id = "/base_link"
+            pc.type = pc.POINTS
+            pc.action = pc.ADD
+            pc.pose.orientation.w = 1
+            for point in cluster:
+                pc.points.append(Point(point[0], point[1], point[2]))
+            t = rospy.Duration()
+            pc.lifetime = t
+            pc.scale.x = 0.05
+            pc.scale.y = 0.05
+            pc.color = CLUSTER_COLOURS[i]
+            self._clusters_publishers[i].publish(pc)
+        
+        # Get centroids of all clusters
+        centroids = np.array([np.mean(cluster, axis=0)[:-1] for cluster in clusters])
+
+        # Point to follow
+        follow = np.array([0., 0.], dtype=np.float32)
+        if len(centroids) == 0:
+            # No cluster, so stop
+            follow = [0., 0.]
+        elif len(centroids) == 1:
+            # Only one cluster, so follow that centroid
+            follow = centroids[0]
+        else:
+            # At least 2 clusters, so get the 2 closest ones
+            distance_matrix = euclidean_distances(centroids)
+            # Non-zero values of the distance matrix
+            non_zero_distance_matrix = distance_matrix[distance_matrix > 0.]
+            # Get minimum non-zero value in the matrix
+            min_distance = np.min(non_zero_distance_matrix)
+            # Get position in matrix of the minimun non-zero distance
+            pos = np.argwhere(distance_matrix == min_distance)[0]
+            # Get the 2 centroids the distance corresponds to
+            c1, c2 = centroids[pos[0]], centroids[pos[1]]
+            # Follow the midpoint
+            follow = (c1 + c2) / 2.
+        
+        # Publish the point to follow using a marker
+        marker = Marker()
+        marker.header.frame_id = "/t0/base_link"
+        marker.type = marker.POINTS
+        marker.action = marker.ADD
+        marker.pose.orientation.w = 1
+        p = Point(follow[0], follow[1], 0.)
+        marker.points = [p]
+        t = rospy.Duration()
+        marker.lifetime = t
+        marker.scale.x = 0.1
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
+        marker.color.a = 1.0
+        marker.color.r = 1.0
+        self._centroid_publisher.publish(marker)
+
+        return np.array(follow, dtype=np.float32)
 
 
 class Follower(Robot):
