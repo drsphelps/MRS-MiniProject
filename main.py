@@ -240,12 +240,13 @@ class Laser(object):
                 0.]
             if (not point == [0., 0., 0.]):
                 points.append(point)
-        point_cloud = np.array(points, dtype=np.float32)
-        self._point_cloud = point_cloud
+        self._point_cloud = np.array(points, dtype=np.float32)
+        point_cloud = self._point_cloud
 
+        self._clusters = []
         if len(point_cloud) != 0:
             # DBSCAN clustering
-            model = DBSCAN(eps=0.08)
+            model = DBSCAN(eps=0.2, min_samples=2)
             labels = model.fit_predict(point_cloud)
             clusters = []
             for i in range(0, np.max(labels) + 1):
@@ -322,10 +323,10 @@ class Leader(Robot):
         # Get point to follow relative to the robot (base_link)
         point_to_follow = self.laser.point_to_follow
 
-        if np.linalg.norm(point_to_follow) < 0.4:
+        if np.linalg.norm(point_to_follow) < 0.5:
             # We have reached the desired position, so stop
-            self.vel_msg.linear.x = 0
-            self.vel_msg.angular.z = 0
+            self.vel_msg.linear.x = 0.
+            self.vel_msg.angular.z = 0.
         else:
             # Go towards the desired position using feedback linearisation
             self.linearised_feedback(point_to_follow)
@@ -342,15 +343,13 @@ class Leader(Robot):
         u = velocity[X]
         w = velocity[Y] / self.epsilon
 
-        # self.vel_msg.linear.x = u * 0.6
-        # self.vel_msg.angular.z = w
-        self.vel_msg.linear.x = 0
-        self.vel_msg.angular.z = 0
+        self.vel_msg.linear.x = u
+        self.vel_msg.angular.z = w
 
 
 class LeaderLaser(Laser):
     def __init__(self, name):
-        super(LeaderLaser, self).__init__(name=name, min_angle=-np.pi/4., max_angle=np.pi/4., max_distance=2.)
+        super(LeaderLaser, self).__init__(name=name, min_angle=-np.pi/6., max_angle=np.pi/6., max_distance=2.)
 
     @property
     def point_to_follow(self):
@@ -404,7 +403,7 @@ class Follower(Robot):
         super(Follower, self).__init__(name)
         angle = np.arctan(leader_relative_position[Y] / leader_relative_position[X])
         self._angle = angle
-        self.laser = FollowerLaser(name=name, min_angle=angle-np.pi/12., max_angle= angle+np.pi/12.)
+        self.laser = FollowerLaser(name=name, min_angle=angle-np.pi/6., max_angle= angle+np.pi/6.)
         
         # For feedback linearization
         self.epsilon = 0.2
@@ -420,13 +419,11 @@ class Follower(Robot):
         # Get point to follow relative to the robot (base_link)
         point_to_follow = self.laser.point_to_follow(self._leader_relative_position)
 
-        if np.linalg.norm(point_to_follow) != 0:
+        if np.linalg.norm(point_to_follow) != 0.:
             angle_to_point = np.arctan2(point_to_follow[Y], point_to_follow[X])
-            print(self.name + " Angle to point:")
-            print(angle_to_point)
             self.laser.set_angle(angle_to_point)
 
-        if np.linalg.norm(point_to_follow) < 0.1:
+        if np.linalg.norm(point_to_follow) < 0.2:
             self.vel_msg.linear.x = 0
             self.vel_msg.angular.z = 0
         else:
@@ -446,8 +443,6 @@ class Follower(Robot):
 
         self.vel_msg.linear.x = u
         self.vel_msg.angular.z = w
-
-        # print(self.name + " " + str(self.vel_msg.linear.x) + " " + str(self.vel_msg.angular.z))
 
     def obstacle(self, front, front_left, front_right, left, right):
         # return min([front, front_left, front_right]) < 0.5
@@ -540,14 +535,14 @@ def run(args):
     rospy.init_node('main')
     
     # Update control every 100 ms.
-    rate_limiter = rospy.Rate(100)
+    rate_limiter = rospy.Rate(10)
 
     # Leader robot
     l = Leader("t0")
     # Follower robot 1
-    f1 = Follower("t1", np.array([.5, .5]))
+    f1 = Follower("t1", np.array([.3, .3]))
     # Follower robot 2
-    f2 = Follower("t2", np.array([.5, -.5]))
+    f2 = Follower("t2", np.array([.3, -.3]))
 
 
     while not rospy.is_shutdown():
