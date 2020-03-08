@@ -535,7 +535,7 @@ def run(args):
     rospy.init_node('main')
     
     # Update control every 100 ms.
-    rate_limiter = rospy.Rate(10)
+    rate_limiter = rospy.Rate(1000)
 
     # Leader robot
     l = Leader("t0")
