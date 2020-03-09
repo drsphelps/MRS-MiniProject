@@ -38,6 +38,8 @@ from std_msgs.msg import ColorRGBA
 # For getting distances between centroids
 from sklearn.metrics.pairwise import euclidean_distances
 
+ROBOT_RADIUS = 0.105 / 2.
+
 CLUSTER_COLOURS = [
     ColorRGBA(140.0, 224.0, 255.0, 1.0),
     ColorRGBA(12.0, 227.0, 208.0, 1.0),
@@ -281,10 +283,6 @@ class Laser(object):
     # Returns the centroids of all clusters relative to the robot (base link)
     def get_centroids(self):
         clusters = self._clusters
-        
-        if len(clusters) == 0:
-            # No clusters, so return no centroid
-            return np.array([])
 
         # Publish clusters using markers
         for i in range(0, len(clusters)):
@@ -294,6 +292,7 @@ class Laser(object):
             pc.type = pc.POINTS
             pc.action = pc.ADD
             pc.pose.orientation.w = 1
+            pc.points = []
             for point in cluster:
                 pc.points.append(Point(point[0], point[1], point[2]))
             t = rospy.Duration()
@@ -303,8 +302,15 @@ class Laser(object):
             pc.color = CLUSTER_COLOURS[i]
             self._clusters_publishers[i].publish(pc)
         
+        if len(clusters) == 0:
+            # No clusters, so return no centroid
+            return np.array([], dtype=np.float32)
+        
         # Get centroids of all clusters
-        centroids = np.array([np.mean(cluster, axis=0)[:-1] for cluster in clusters])
+        centroids = np.array([np.mean(cluster, axis=0)[:-1] for cluster in clusters], dtype=np.float32)
+
+        print("Centroids for " + self._name + " in get_centroids:")
+        print(centroids)
 
         return centroids
 
@@ -343,7 +349,7 @@ class Leader(Robot):
         u = velocity[X]
         w = velocity[Y] / self.epsilon
 
-        self.vel_msg.linear.x = u
+        self.vel_msg.linear.x =  u
         self.vel_msg.angular.z = w
 
 
@@ -399,35 +405,22 @@ class LeaderLaser(Laser):
         return np.array(follow, dtype=np.float32)
 
 class Follower(Robot):
-    def __init__(self, name, leader_relative_position):
+    def __init__(self, name, leader, leader_relative_position, desired_range_and_bearing):
         super(Follower, self).__init__(name)
-        angle = np.arctan(leader_relative_position[Y] / leader_relative_position[X])
-        self._angle = angle
-        self.laser = FollowerLaser(name=name, min_angle=angle-np.pi/6., max_angle= angle+np.pi/6.)
         
-        # For feedback linearization
-        self.epsilon = 0.2
+        self.laser = FollowerLaser(name=name, min_angle=-np.pi/4., max_angle=np.pi/4., max_distance=1.5, leader=leader, leader_relative_position=leader_relative_position, desired_range_and_bearing=desired_range_and_bearing)
 
-        # Position the leader should be at relative to this follower
-        self._leader_relative_position = leader_relative_position
+        # The leader this robot needs to follow
+        self.leader = leader
 
     def update_velocities(self, rate_limiter):
-        if not self.laser.ready or not self.groundtruth.ready:
+        if not self.laser.ready or not self.slam.ready:
             rate_limiter.sleep()
             return
         
-        # Get point to follow relative to the robot (base_link)
-        point_to_follow = self.laser.point_to_follow(self._leader_relative_position)
-
-        if np.linalg.norm(point_to_follow) != 0.:
-            angle_to_point = np.arctan2(point_to_follow[Y], point_to_follow[X])
-            self.laser.set_angle(angle_to_point)
-
-        if np.linalg.norm(point_to_follow) < 0.2:
-            self.vel_msg.linear.x = 0
-            self.vel_msg.angular.z = 0
-        else:
-            self.linearised_feedback(point_to_follow)
+        controls = self.laser.get_controls
+        self.vel_msg.linear.x = controls[0][0]
+        self.vel_msg.angular.z = controls[1][0]
 
         self.publisher.publish(self.vel_msg)
         self.pose_history.append(self.slam.pose)
@@ -435,13 +428,14 @@ class Follower(Robot):
             self.write_pose()
         
     def linearised_feedback(self, velocity):
+        print("Moving a tiny bit...")
         velocity = cap(velocity, SPEED)
 
         # Feedback linearisation with relative positions
         u = velocity[X]
         w = velocity[Y] / self.epsilon
 
-        self.vel_msg.linear.x = u
+        self.vel_msg.linear.x = u * 1.3
         self.vel_msg.angular.z = w
 
     def obstacle(self, front, front_left, front_right, left, right):
@@ -450,100 +444,134 @@ class Follower(Robot):
 
 
 class FollowerLaser(Laser):
-    def __init__(self, name, min_angle, max_angle):
-        super(FollowerLaser, self).__init__(name=name, min_angle=min_angle, max_angle=max_angle, max_distance=2.)
-
-        self.name = name
+    def __init__(self, name, min_angle, max_angle, max_distance, leader, leader_relative_position, desired_range_and_bearing):
+        super(FollowerLaser, self).__init__(name=name, min_angle=min_angle, max_angle=max_angle, max_distance=max_distance)
 
         # Publisher for the leader's centroid as sensed by this robot's laser
         self._centroid_publisher = rospy.Publisher('/' + name + '/centroid', Marker, queue_size=1)
-    
-    def point_to_follow(self, leader_relative_position):
-        def get_closest_centroid_to_leader(centroids):
-            min_dist = -1
-            closest_to_leader = np.array([0., 0.])
-            for centroid in centroids:
-                dist = np.linalg.norm(leader_relative_position - centroid)
-                if min_dist == -1 or dist < min_dist:
-                    min_dist = dist
-                    closest_to_leader = centroid
-            return closest_to_leader
 
+        # Publisher for the last leader movement
+        self._leader_movement_publisher = rospy.Publisher('/' + name + '/movement', Marker, queue_size=1)
+
+        # The leader this robot needs to follow
+        self.leader = leader
+
+        # Last sensed leader position relative to this follower robot
+        # Start with predefined position
+        self._last_leader_position = leader_relative_position
+
+        # Constant to use in range and bearing method
+        self._k = np.array([[.6],[.5]], dtype=np.float32)
+
+        # Desired range and bearing to be achieved
+        self._z_ij_d = desired_range_and_bearing
+
+    @property
+    # Returns linear and angular velocity to use next
+    def get_controls(self):
+        def get_closest_centroid_to_robot(centroids):
+            distances_to_centroids = np.sum(centroids ** 2, axis=1)
+            return centroids[np.argmin(distances_to_centroids)]
+    
         # Get centroids of all clusters
         centroids = self.get_centroids
-
-        # Point to follow
-        follow = np.array([0., 0.], dtype=np.float32)
-
+        
         if len(centroids) == 0:
-            # No cluster, so stop
-            follow = [0., 0.]
+            # Make leader centroid just yourself, so that you stop moving
+            leader_centroid = np.array([0., 0.], dtype=np.float32)
         elif len(centroids) == 1:
-            # Only one cluster, so follow that centroid
-            follow = centroids[0]
-
-            # Publish leader centroid
-            marker = Marker()
-            marker.header.frame_id = '/' + self.name + "/base_link"
-            marker.type = marker.POINTS
-            marker.action = marker.ADD
-            marker.pose.orientation.w = 1
-            p = Point(follow[X], follow[Y], 0.)
-            marker.points = [p]
-            t = rospy.Duration()
-            marker.lifetime = t
-            marker.scale.x = 0.1
-            marker.scale.y = 0.1
-            marker.scale.z = 0.1
-            marker.color.a = 1.0
-            if self.name == "t1":
-                marker.color.b = 1.0
-            if self.name == "t2":
-                marker.color.g = 1.0
-            self._centroid_publisher.publish(marker)
-
-            follow = follow - leader_relative_position
+            # Only one cluster, so get that centroid
+            leader_centroid = centroids[0]
         else:
-            closest_to_leader = get_closest_centroid_to_leader(centroids)
+            leader_centroid = get_closest_centroid_to_robot(centroids)
 
-            # Publish leader centroid
-            marker = Marker()
-            marker.header.frame_id = '/' + self.name + "/base_link"
-            marker.type = marker.POINTS
-            marker.action = marker.ADD
-            marker.pose.orientation.w = 1
-            p = Point(closest_to_leader[X], closest_to_leader[Y], 0.)
-            marker.points = [p]
-            t = rospy.Duration()
-            marker.lifetime = t
-            marker.scale.x = 0.1
-            marker.scale.y = 0.1
-            marker.scale.z = 0.1
+        # Publish leader centroid
+        marker = Marker()
+        marker.header.frame_id = '/' + self._name + "/base_link"
+        marker.type = marker.POINTS
+        marker.action = marker.ADD
+        marker.pose.orientation.w = 1
+        p = Point(leader_centroid[X], leader_centroid[Y], 0.)
+        marker.points = [p]
+        t = rospy.Duration()
+        marker.lifetime = t
+        marker.scale.x = 0.1
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
+        marker.color.a = 1.0
+        if self._name == "t1":
+            marker.color.b = 1.0
+        if self._name == "t2":
+            marker.color.g = 1.0
+        self._centroid_publisher.publish(marker)
+
+        if np.linalg.norm(leader_centroid) == 0.:
+            # Stop the robot (send 0-controls)
+            return np.array([[0.],[0.]], dtype=np.float32)
+        
+        movement_of_leader = leader_centroid - self._last_leader_position
+
+        # Publish last movement of leader
+        marker = Marker()
+        marker.header.frame_id = '/' + self._name + "/base_link"
+        marker.type = marker.ARROW
+        marker.action = marker.ADD
+        marker.pose.orientation.w = 1
+        p1 = Point(self._last_leader_position[X], self._last_leader_position[Y], 0.)
+        p2 = Point(leader_centroid[X], leader_centroid[Y], 0.)
+        marker.points = [p1, p2]
+        t = rospy.Duration()
+        marker.lifetime = t
+        marker.scale.x = 0.02
+        marker.scale.y = 0.04
+        marker.scale.z = 0.02
+        marker.color.a = 1.0
+        if self._name == "t1":
             marker.color.a = 1.0
-            if self.name == "t1":
-                marker.color.b = 1.0
-            if self.name == "t2":
-                marker.color.g = 1.0
-            self._centroid_publisher.publish(marker)
+        if self._name == "t2":
+            marker.color.g = 1.0
+        self._leader_movement_publisher.publish(marker)
 
-            follow = closest_to_leader - leader_relative_position
+        # Relative angle of leader w.r.t. the follower
+        beta_ij = np.arctan2(movement_of_leader[X], movement_of_leader[Y])
+        # Distance from robot to leader
+        l_ij = np.linalg.norm(leader_centroid)
+        # Orientation of leader centroid relative to the robot
+        alpha = np.arctan2(leader_centroid[Y], leader_centroid[X])
+        
+        psi_ij = np.pi + alpha - beta_ij
+        gamma_ij = np.pi + alpha
 
-        return np.array(follow, dtype=np.float32)
+        # Define matrices G and F
+        G = np.array([[np.cos(gamma_ij), ROBOT_RADIUS * np.sin(gamma_ij)],[-np.sin(gamma_ij) / l_ij, ROBOT_RADIUS * np.cos(gamma_ij) / ROBOT_RADIUS]], dtype=np.float32)
+        F = np.array([[-np.cos(psi_ij), 0.],[np.sin(psi_ij)/ l_ij, -1.]], dtype=np.float32)
+
+        # Current range and bearing
+        z_ij = np.array([[l_ij],[psi_ij]], dtype=np.float32)
+
+        # Last registered controls of leader
+        u_i = np.array([[self.leader.vel_msg.linear.x],[self.leader.vel_msg.angular.z]], dtype=np.float32)
+        # Desired controls (linear and angluar velocities)
+        u_j = np.linalg.inv(G) * (self._k * (self._z_ij_d - z_ij) - F * u_i)
+
+        # Update last sensed position of the leader
+        self._last_leader_position = leader_centroid
+
+        return u_j
 
 
 def run(args):
     rospy.init_node('main')
     
-    # Update control every 100 ms.
+    # Control update rate = 100Hz.
     rate_limiter = rospy.Rate(1000)
 
     # Leader robot
     l = Leader("t0")
-    # Follower robot 1
-    f1 = Follower("t1", np.array([.3, .3]))
-    # Follower robot 2
-    f2 = Follower("t2", np.array([.3, -.3]))
-
+    # Follower robot 2 -- leader starts at [.6, -.3] relative to it
+    f2 = Follower("t2", l, np.array([.6, -.3], dtype=np.float32), np.array([[0.4],[3.*np.pi/4.]], dtype=np.float32))
+    # Follower robot 1 -- follower robot 2 starts at [.6, -.3.] relative to it
+    f1 = Follower("t1", f2, np.array([6., -.3], dtype=np.float32), np.array([[0.4],[3.*np.pi/4.]], dtype=np.float32))
 
     while not rospy.is_shutdown():
         l.slam.update()
