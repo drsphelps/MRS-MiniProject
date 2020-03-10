@@ -345,7 +345,7 @@ class LeaderLaser(object):
         
         # Publish the point to follow using a marker
         marker = Marker()
-        marker.header.frame_id = "/t0/base_link"
+        marker.header.frame_id = "/base_link"
         marker.type = marker.POINTS
         marker.action = marker.ADD
         marker.pose.orientation.w = 1
