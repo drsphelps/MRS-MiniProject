@@ -43,7 +43,7 @@ class Leader(Robot):
         self._epsilon = 0.2
     
     def update_velocities(self, rate_limiter):
-        if not self.laser.ready or not self.slam.ready:
+        if not self.laser.ready or not self.slam.ready or not self.groundtruth.ready:
             return
         
         # Get point to follow relative to the robot (base_link)
@@ -58,7 +58,7 @@ class Leader(Robot):
             self.linearised_feedback(point_to_follow)
         
         self.publisher.publish(self.vel_msg)
-        self.pose_history.append(self.slam.pose)
+        self.pose_history.append(np.concatenate([self.groundtruth.pose, self.slam.pose], axis=0))
         self.write_pose
     
     def linearised_feedback(self, velocity):

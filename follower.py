@@ -52,9 +52,9 @@ class Follower(Robot):
         # Offset between the follower's SLAM position and the leader's SLAM position
         self._slam_offset = None
 
+
     def update_velocities(self, rate_limiter):
-        if not self.laser.ready or not self.slam.ready:
-            rate_limiter.sleep()
+        if not self.laser.ready or not self.slam.ready or not self.groundtruth.ready:
             return
         
         controls = self.get_controls
@@ -62,7 +62,7 @@ class Follower(Robot):
         self.vel_msg.angular.z = controls[1][0]
 
         self.publisher.publish(self.vel_msg)
-        self.pose_history.append(self.slam.pose)
+        self.pose_history.append(np.concatenate([self.groundtruth.pose, self.slam.pose], axis=0))
         self.write_pose
     
 

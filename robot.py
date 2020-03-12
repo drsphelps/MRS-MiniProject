@@ -10,6 +10,7 @@ import rospy
 
 from slam import SLAM
 from laser import Laser
+from ground_truth import GroundtruthPose
 
 # Robot motion commands:
 # http://docs.ros.org/api/geometry_msgs/html/msg/Twist.html
@@ -27,6 +28,7 @@ YAW = 2
 
 class Robot(object):
     def __init__(self, name, rate_limiter, map_frame="occupancy_grid", laser_min_angle=-np.pi/6., laser_max_angle=np.pi/6., laser_max_distance=2.):
+        self.groundtruth = GroundtruthPose(name)
         self.pose_history = []
         self.publisher = rospy.Publisher('/' + name + '/cmd_vel', Twist, queue_size=5)
         self.name = name
