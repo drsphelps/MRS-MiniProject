@@ -1,17 +1,10 @@
 <launch>
-<<<<<<< HEAD
-  <arg name="ns" default="t0"/>
-
-  <!-- Arguments -->
-  <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
-=======
   <arg name="ns" default="t"/>
 
   <!-- Arguments -->
   <arg name="model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
   <arg name="slam_methods" default="gmapping" doc="slam type [gmapping]"/>
   <arg name="open_rviz" default="true"/>
->>>>>>> formation_attempt
   <arg name="first_tb3"  default="t0"/>
   <arg name="second_tb3" default="t1"/>
   <arg name="third_tb3"  default="t2"/>
@@ -21,23 +14,6 @@
   <arg name="first_tb3_z_pos" default=" 0.0"/>
   <arg name="first_tb3_yaw"   default=" 1.57"/>
 
-<<<<<<< HEAD
-  <arg name="second_tb3_x_pos" default=" 1.0"/>
-  <arg name="second_tb3_y_pos" default="-1.0"/>
-  <arg name="second_tb3_z_pos" default=" 0.0"/>
-  <arg name="second_tb3_yaw"   default=" 1.57"/>
-
-  <arg name="third_tb3_x_pos" default=" 0.5"/>
-  <arg name="third_tb3_y_pos" default=" 1.0"/>
-  <arg name="third_tb3_z_pos" default=" 0.0"/>
-  <arg name="third_tb3_yaw"   default=" 0.0"/>
-
-  <arg name="slam_methods" default="gmapping" doc="slam type [gmapping]"/>
-  <arg name="open_rviz" default="true"/>
-
-  <node pkg="tf" type="static_transform_publisher" name="map_broadcaster" args="-10 -10 0 0 0 0 map occupancy_grid 100" />
-
-=======
   <arg name="second_tb3_x_pos" default="-1.3"/>
   <arg name="second_tb3_y_pos" default="-1.1"/>
   <arg name="second_tb3_z_pos" default=" 0.0"/>
@@ -83,7 +59,6 @@
     <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg third_tb3) -x $(arg third_tb3_x_pos) -y $(arg third_tb3_y_pos) -z $(arg third_tb3_z_pos) -Y $(arg third_tb3_yaw) -param robot_description" />
   </group>
 
->>>>>>> formation_attempt
   <!-- Gmapping -->
   <node pkg="gmapping" type="slam_gmapping" name="turtlebot3_slam_gmapping" output="screen" ns="t0">
     <param name="base_frame" value="t0/base_footprint"/>
