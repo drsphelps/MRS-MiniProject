@@ -52,17 +52,27 @@ class Follower(Robot):
         # Offset between the follower's SLAM position and the leader's SLAM position
         self._slam_offset = None
 
-
+        # Desired position relative to the leader
+        self._desired_relative_position = np.array(
+            [desired_range_and_bearing[0][0] * np.cos(desired_range_and_bearing[1][0]),
+             desired_range_and_bearing[0][0] * np.sin(desired_range_and_bearing[1][0]),
+             0.])
+        
+        self.ready = False
+        
     def update_velocities(self, rate_limiter):
         if not self.laser.ready or not self.slam.ready or not self.groundtruth.ready:
             return
+        
+        if self._last_leader_position is not None and np.linalg.norm(self._last_leader_position) != 0:
+            self.ready = True
         
         controls = self.get_controls
         self.vel_msg.linear.x = controls[0][0]
         self.vel_msg.angular.z = controls[1][0]
 
         self.publisher.publish(self.vel_msg)
-        self.pose_history.append(np.concatenate([self.groundtruth.pose, self.slam.pose], axis=0))
+        self.pose_history.append(np.concatenate([self.groundtruth.pose, self.leader.groundtruth.pose + self._desired_relative_position], axis=0))
         self.write_pose
     
 

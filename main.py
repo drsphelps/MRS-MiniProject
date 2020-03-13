@@ -44,13 +44,15 @@ def run(args):
         desired_range_and_bearing=np.array([[0.4],[np.pi]], dtype=np.float32))
 
     while not rospy.is_shutdown():
-        l.slam.update()
+        if f1.ready and f2.ready:
+            l.update_velocities(rate_limiter)
+            l.slam.update()
+
         f1.slam.update()
-        f2.slam.update()
-        # Make sure all measurements are ready.
-        l.update_velocities(rate_limiter)
         f1.update_velocities(rate_limiter)
+        f2.slam.update()
         f2.update_velocities(rate_limiter)
+        
         rate_limiter.sleep()
 
 
